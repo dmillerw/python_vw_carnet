@@ -6,6 +6,16 @@ This library has **not** been battle tested. It works for me on my machine and t
 
 **I am not responsible for any issues resulting in your use of  this library, including but not limited to loss of account access, acts of God, or your car gaining sentience and locking you in the car, forcing you to listen to polka music on repeat.**
 
+## What can it do?
+
+So far, at least with the VW ID.4 I have, it can do the following:
+
+- Retrieve vehicle status (mileage, battery, charging status, etc)
+
+- Retrieve door/window status
+
+- Start/stop preclimate control
+
 ## Vehicle Compatibility
 
 This library is intended for Volkswagen vehicles in the United States that use the `myVW` application and connected services.
@@ -30,11 +40,11 @@ Volkswagen's U.S. myVW page says the app is available on most model years 2020 a
 | Passat            | ❔    | ❔    | ❔    | ❌    |  ❌   | ❌    | ❌    |
 | Jetta             | ❔    | ❔    | ❔    | ❔    | ❔    | ❔    | ❔    |
 | Jetta GLI         | ❔    | ❔    | ❔    | ❔    | ❔    | ❔    | ❔    |
-| Taos              | ❌    | ❌    | ❔    | ❔    | ❔    | ❔    |      |
+| Taos              | ❌    | ❌    | ❔    | ❔    | ❔    | ❔    | ❔    |
 | Golf              | ❔    | ❔    |  ❌   | ❌    | ❌    | ❌    | ❌    |
 | Golf GTI          | ❔    | ❔    | ❔    | ❔    | ❔    | ❔    | ❔    |
 | Golf R            | ❌    | ❌    | ❔    | ❔    | ❔    | ❔    | ❔    |
-| ID.4              | ❌    | ❔    | ❔    | c    | ❔    | ❔    | ❌    |
+| ID.4              | ❌    | ❔    | ❔    | ⚠️   | ❔    | ❔    | ❌    |
 | ID. Buzz          | ❌    | ❌    |  ❌   | ❌    |  ❌   | ❔    | ❌    |
 
 ## Accuracy/Completeness
