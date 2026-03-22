@@ -13,5 +13,5 @@ FOR /F "usebackq tokens=*" %%i IN ("%ENV_FILE%") DO (
     )
 )
 
-venv\scripts\python.exe -m build
-venv\scripts\python.exe -m twine upload dist/*
+uv build
+uv publish
