@@ -9,7 +9,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Query captured myVW endpoints")
     parser.add_argument(
         "command",
-        choices=["garage", "status", "location", "ev-summary"],
+        choices=[
+            "garage",
+            "status",
+            "location",
+            "ev-summary",
+            "preclimate_start",
+            "preclimate_stop",
+        ],
         help="Which payload to fetch",
     )
     parser.add_argument("--email", default=os.getenv("VW_EMAIL"))
@@ -44,6 +51,10 @@ def main() -> int:
             payload = client.get_vehicle(vehicle_id=args.vehicle_id)
         elif args.command == "location":
             payload = client.get_vehicle_location(vehicle_id=args.vehicle_id)
+        elif args.command == "preclimate_start":
+            payload = client.start_ev_preclimate(vehicle_id=args.vehicle_id)
+        elif args.command == "preclimate_stop":
+            payload = client.stop_ev_preclimate(vehicle_id=args.vehicle_id)
         else:
             payload = client.get_ev_summary(
                 vehicle_id=args.vehicle_id, temp_unit=args.temp_unit

@@ -42,6 +42,7 @@ from .models import (
     VehicleSessionRequest,
     VehicleSessionResponse,
 )
+from .models.generic import GenericCorrelationIdResponse
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +178,30 @@ class VWClient:
 
         return EVSummaryResponse.model_validate(self._decode_json(response))
 
+    def start_ev_preclimate(self, vehicle_id: str) -> GenericCorrelationIdResponse:
+        logger.debug("Starting climate for %s", vehicle_id)
+        user_id = self._require(self.state.user_id, "Missing user id")
+        response = self._request(
+            "POST",
+            f"{BASE_URL}/ev/v1/vehicle/{vehicle_id}/pretripclimate/start",
+            token=self._resolve_vehicle_token(vehicle_id),
+            user_id_header=user_id,
+        )
+
+        return GenericCorrelationIdResponse.model_validate(self._decode_json(response))
+
+    def stop_ev_preclimate(self, vehicle_id: str) -> GenericCorrelationIdResponse:
+        logger.debug("Starting climate for %s", vehicle_id)
+        user_id = self._require(self.state.user_id, "Missing user id")
+        response = self._request(
+            "POST",
+            f"{BASE_URL}/ev/v1/vehicle/{vehicle_id}/pretripclimate/stop",
+            token=self._resolve_vehicle_token(vehicle_id),
+            user_id_header=user_id,
+        )
+
+        return GenericCorrelationIdResponse.model_validate(self._decode_json(response))
+
     def close(self) -> None:
         logger.debug("Closing HTTP session")
         self.session.close()
@@ -308,6 +333,8 @@ class VWClient:
         return True
 
     def _try_refresh_vehicle_token(self, vehicle_id: str) -> bool:
+        self._try_refresh_access_token()
+
         if self._vehicle_token_valid(vehicle_id):
             logger.debug('Using cached vehicle token for "%s"', vehicle_id)
             return True
