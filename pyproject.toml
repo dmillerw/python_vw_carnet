@@ -1,6 +1,6 @@
 [project]
 name = "python-vw-carnet"
-version = "0.5.0"
+version = "0.5.2"
 description = "Python client for myVW login, session management, and vehicle data APIs"
 readme = "README.md"
 authors = [

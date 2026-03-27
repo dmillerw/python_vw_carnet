@@ -17,7 +17,7 @@ from typing import Literal
 import requests
 from dataclasses_json import dataclass_json
 
-from constants import (
+from python_vw_carnet.constants import (
     ANDROID_CLIENT_ID,
     APP_VERSION,
     BASE_URL,
@@ -30,12 +30,12 @@ from constants import (
     USER_AGENT_APP,
     USER_AGENT_WEB,
 )
-from errors import (
+from python_vw_carnet.errors import (
     AuthenticationError,
     VWClientError,
     VehicleSessionError,
 )
-from models import (
+from python_vw_carnet.models import (
     AccessTokenExchangeRequest,
     AccessTokenResponse,
     EVSummaryResponse,
@@ -47,7 +47,7 @@ from models import (
     VehicleSessionRequest,
     VehicleSessionResponse,
 )
-from models.generic import GenericCorrelationIdResponse
+from python_vw_carnet.models.generic import GenericCorrelationIdResponse
 
 logger = logging.getLogger(__name__)
 
