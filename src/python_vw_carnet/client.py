@@ -372,7 +372,6 @@ class VWClient:
             f"{BASE_URL}/ss/v1/user/{user_id}/vehicle/{vehicle_id}/session",
             json=request.model_dump(),
             token=access_token,
-            user_id_header=user_id,
         )
 
         if response.status_code >= 400:
@@ -396,7 +395,6 @@ class VWClient:
             "GET",
             f"{BASE_URL}/ss/v1/user/{self._require(self.state.user_id, 'Missing user id')}/challenge",
             token=self._require(self.state.access_token, "Missing access token"),
-            user_id_header=self._require(self.state.user_id, "Missing user id"),
         )
         payload = SpinChallengeResponse.model_validate(self._decode_json(response))
         return self._require(
