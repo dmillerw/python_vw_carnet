@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 
-from src.python_vw_carnet.client import VWClient
+from client import VWClient
 
 
 def build_parser() -> argparse.ArgumentParser:
