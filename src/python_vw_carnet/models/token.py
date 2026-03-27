@@ -14,6 +14,8 @@ class AccessTokenExchangeRequest(BaseModel):
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
     client_id: str
+    grant_type: Literal["refresh_token"]
+    code_verifier: str
 
 
 class AccessTokenResponse(BaseModel):

@@ -12,11 +12,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urljoin, urlparse
+from typing import Literal
 
 import requests
 from dataclasses_json import dataclass_json
 
-from .constants import (
+from src.python_vw_carnet.constants import (
     ANDROID_CLIENT_ID,
     APP_VERSION,
     BASE_URL,
@@ -29,8 +30,12 @@ from .constants import (
     USER_AGENT_APP,
     USER_AGENT_WEB,
 )
-from .errors import AuthenticationError, VWClientError, VehicleSessionError
-from .models import (
+from src.python_vw_carnet.errors import (
+    AuthenticationError,
+    VWClientError,
+    VehicleSessionError,
+)
+from src.python_vw_carnet.models import (
     AccessTokenExchangeRequest,
     AccessTokenResponse,
     EVSummaryResponse,
@@ -42,7 +47,7 @@ from .models import (
     VehicleSessionRequest,
     VehicleSessionResponse,
 )
-from .models.generic import GenericCorrelationIdResponse
+from src.python_vw_carnet.models.generic import GenericCorrelationIdResponse
 
 logger = logging.getLogger(__name__)
 
@@ -99,8 +104,8 @@ class VWClient:
             self.state = VWSessionState()
         self.state.email = email
 
-        if not self.state.vehicles:
-            self._load_vehicles()
+        # if not self.state.vehicles:
+        # self._load_vehicles()
 
     def login(self, *, force: bool = False) -> None:
         logger.debug("Ensuring authenticated session (force=%s)", force)
@@ -135,8 +140,7 @@ class VWClient:
             "GET",
             f"{BASE_URL}/account/v1/garage",
             params={"idToken": self._require(self.state.id_token, "Missing id token")},
-            token=self._require(self.state.access_token, "Missing access token"),
-            user_id_header="",
+            token="access",
         )
 
         return GarageResponse.model_validate(self._decode_json(response))
@@ -146,8 +150,8 @@ class VWClient:
         response = self._request(
             "GET",
             f"{BASE_URL}/rvs/v1/vehicle/{vehicle_id}",
-            token=self._resolve_vehicle_token(vehicle_id),
-            user_id_header=self._require(self.state.user_id, "Missing user id"),
+            token="vehicle",
+            vehicle_id=vehicle_id,
         )
 
         return VehicleResponse.model_validate(self._decode_json(response))
@@ -157,8 +161,8 @@ class VWClient:
         response = self._request(
             "GET",
             f"{BASE_URL}/rvs/v1/location/vehicle/{vehicle_id}",
-            token=self._resolve_vehicle_token(vehicle_id),
-            user_id_header=self._require(self.state.user_id, "Missing user id"),
+            token="vehicle",
+            vehicle_id=vehicle_id,
         )
 
         return VehicleLocationResponse.model_validate(self._decode_json(response))
@@ -172,8 +176,8 @@ class VWClient:
             "GET",
             f"{BASE_URL}/ev/v1/user/{user_id}/vehicle/{vehicle_id}/summary",
             params={"tempUnit": temp_unit},
-            token=self._resolve_vehicle_token(vehicle_id),
-            user_id_header=user_id,
+            token="vehicle",
+            vehicle_id=vehicle_id,
         )
 
         return EVSummaryResponse.model_validate(self._decode_json(response))
@@ -184,8 +188,8 @@ class VWClient:
         response = self._request(
             "POST",
             f"{BASE_URL}/ev/v1/vehicle/{vehicle_id}/pretripclimate/start",
-            token=self._resolve_vehicle_token(vehicle_id),
-            user_id_header=user_id,
+            token="vehicle",
+            vehicle_id=vehicle_id,
         )
 
         return GenericCorrelationIdResponse.model_validate(self._decode_json(response))
@@ -196,8 +200,8 @@ class VWClient:
         response = self._request(
             "POST",
             f"{BASE_URL}/ev/v1/vehicle/{vehicle_id}/pretripclimate/stop",
-            token=self._resolve_vehicle_token(vehicle_id),
-            user_id_header=user_id,
+            token="vehicle",
+            vehicle_id=vehicle_id,
         )
 
         return GenericCorrelationIdResponse.model_validate(self._decode_json(response))
@@ -292,6 +296,12 @@ class VWClient:
             AccessTokenResponse.model_validate(self._decode_json(token_response))
         )
 
+    def _try_refresh_or_renew_access_token(self) -> None:
+        logger.info("Trying to refresh access token")
+        if not self._try_refresh_access_token():
+            logger.info("Failed, trying to renew access token")
+            self._perform_full_login()
+
     def _try_refresh_access_token(self) -> bool:
         if self._access_token_valid():
             logger.debug("Using cached access token")
@@ -308,13 +318,17 @@ class VWClient:
                 self.state.refresh_token, "Missing refresh token"
             ),
             client_id=ANDROID_CLIENT_ID,
+            grant_type="refresh_token",
+            code_verifier=secrets.token_hex(32),
         )
 
         response = self.session.post(
             f"{BASE_URL}/oidc/v1/token",
             data=request.model_dump(),
             headers=self._app_headers(
-                content_type="application/x-www-form-urlencoded", include_auth=False
+                content_type="application/x-www-form-urlencoded",
+                include_auth=False,
+                user_id=self._require(self.state.user_id, "Missing user id"),
             ),
             timeout=self.timeout,
         )
@@ -333,7 +347,7 @@ class VWClient:
         return True
 
     def _try_refresh_vehicle_token(self, vehicle_id: str) -> bool:
-        self._try_refresh_access_token()
+        self._try_refresh_or_renew_access_token()
 
         if self._vehicle_token_valid(vehicle_id):
             logger.debug('Using cached vehicle token for "%s"', vehicle_id)
@@ -457,12 +471,27 @@ class VWClient:
         self,
         method: str,
         url: str,
+        token: Literal["access", "vehicle"],
         *,
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
-        token: str | None,
-        user_id_header: str,
+        vehicle_id: str | None = None,
     ) -> requests.Response:
+        token_str: str | None = None
+
+        if token == "access":
+            self._try_refresh_or_renew_access_token()
+            token_str = self._require(self.state.access_token, "Missing access token")
+
+        elif token == "vehicle":
+            if vehicle_id is None:
+                raise Exception("can't access vehicle token without vehicle_id")
+            self._try_refresh_vehicle_token(vehicle_id)
+            token_str = self._resolve_vehicle_token(vehicle_id)
+
+        if token_str is None:
+            raise Exception("didn't find token")
+
         logger.debug("HTTP %s %s", method, url)
         response = self.session.request(
             method,
@@ -470,11 +499,13 @@ class VWClient:
             params=params,
             json=json,
             headers=self._app_headers(
-                token=token,
-                user_id=user_id_header,
-                content_type="application/json;charset=UTF-8"
-                if json is None
-                else "application/json; charset=UTF-8",
+                token=token_str,
+                user_id=self._require(self.state.user_id, "Missing user id"),
+                content_type=(
+                    "application/json;charset=UTF-8"
+                    if json is None
+                    else "application/json; charset=UTF-8"
+                ),
             ),
             timeout=self.timeout,
         )

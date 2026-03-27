@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 
-from .client import VWClient
+from src.python_vw_carnet.client import VWClient
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -43,6 +43,8 @@ def main() -> int:
         spin=args.spin,
         session_path=args.session_path,
     )
+
+    client.login()
 
     try:
         if args.command == "garage":
